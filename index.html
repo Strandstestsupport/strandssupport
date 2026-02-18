@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strands — FAQ Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0f4f8; --surface: #ffffff; --border: #dde3ea;
+    --accent: #1a56db; --accent-dark: #1340b0; --accent-light: #ebf0fd;
+    --text: #111827; --muted: #6b7280; --bot-bg: #f8fafc; --user-bg: #1a56db;
+  }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 20px;
+    background-image: radial-gradient(circle at 85% 15%, rgba(26,86,219,0.07) 0%, transparent 50%),
+                      radial-gradient(circle at 10% 85%, rgba(26,86,219,0.04) 0%, transparent 40%);
+  }
+  .wrapper { width: 100%; max-width: 720px; }
+  .header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; animation: fadeDown 0.5s ease both; }
+  .header-right { margin-left: auto; }
+  .lang-toggle {
+    display: flex; border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; background: var(--surface);
+  }
+  .lang-btn {
+    padding: 7px 14px; font-family: 'Inter', sans-serif; font-size: 13px;
+    font-weight: 500; border: none; cursor: pointer; background: none;
+    color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+  }
+  .lang-btn.active { background: var(--accent); color: white; }
+  .lang-btn:hover:not(.active) { background: var(--accent-light); color: var(--accent); }
+  .logo-mark {
+    width: 48px; height: 48px; background: var(--accent); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: white;
+    flex-shrink: 0; box-shadow: 0 4px 14px rgba(26,86,219,0.3); letter-spacing: -0.5px;
+  }
+  .header-text h1 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--text); }
+  .header-text p { font-size: 13px; color: var(--muted); margin-top: 2px; font-weight: 300; }
+  .status-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
+  .chat-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.04); animation: fadeUp 0.6s ease both 0.1s;
+  }
+  .messages { height: 460px; overflow-y: auto; padding: 24px 22px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .message { display: flex; gap: 10px; animation: msgIn 0.3s ease both; }
+  .message.user { flex-direction: row-reverse; }
+  .avatar { width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .bot-avatar { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(26,86,219,0.25); }
+  .user-avatar { background: #e5e7eb; color: var(--muted); }
+  .bubble { max-width: 80%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.7; }
+  .bot .bubble { background: var(--bot-bg); border: 1px solid var(--border); border-top-left-radius: 4px; color: var(--text); }
+  .user .bubble { background: var(--user-bg); border-top-right-radius: 4px; color: white; }
+  .bubble a { color: var(--accent); text-decoration: underline; }
+  .user .bubble a { color: #c7d9ff; }
+  .dots { display: flex; gap: 4px; align-items: center; padding: 4px 2px; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  .tabs { display: flex; gap: 6px; padding: 14px 22px 0; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { background: none; border: none; padding: 7px 14px; font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; border-radius: 8px 8px 0 0; white-space: nowrap; transition: all 0.2s; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab-btn:hover { color: var(--accent); background: var(--accent-light); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-light); }
+  .suggestions { padding: 12px 22px 14px; display: flex; flex-wrap: wrap; gap: 7px; }
+  .suggestion-btn { background: var(--accent-light); border: 1px solid rgba(26,86,219,0.2); color: var(--accent-dark); font-family: 'Inter', sans-serif; font-size: 12.5px; padding: 6px 13px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; }
+  .suggestion-btn:hover { background: var(--accent); color: white; border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(26,86,219,0.25); }
+  .input-area { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); background: #fafbfc; }
+  .input-area input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; outline: none; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; transition: border-color 0.2s; }
+  .input-area input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+  .input-area input::placeholder { color: #bbb; }
+  .send-btn { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; box-shadow: 0 2px 8px rgba(26,86,219,0.3); }
+  .send-btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .send-btn svg { width: 16px; height: 16px; fill: white; }
+  .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; animation: fadeUp 0.6s ease both 0.2s; }
+  .footer-left { font-size: 12px; color: var(--muted); }
+  .footer-left a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .footer-right { font-size: 12px; color: #bbb; }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-5px); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <div class="logo-mark">STR<br>ANDS</div>
+    <div class="header-text">
+      <h1 id="h-title">Strands Support</h1>
+      <p><span class="status-dot"></span><span id="h-sub">FAQ Assistant · Always available · No login needed</span></p>
+    </div>
+    <div class="header-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('en', this)">🇬🇧 EN</button>
+        <button class="lang-btn" onclick="setLang('sv', this)">🇸🇪 SV</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-box">
+    <div class="tabs" id="tabs"></div>
+    <div class="messages" id="messages"></div>
+    <div class="suggestions" id="suggestions"></div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Ask anything about Strands products..." onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">Content from <a href="https://strandseurope.com" target="_blank">strandseurope.com</a></div>
+    <div class="footer-right">© Strands Group AB</div>
+  </div>
+</div>
+
+<script>
+const SP = 'https://strandsab.sharepoint.com/:f:/s/Aftersales/IgCYn40pqzMbRoOqLDUeQriXAVinLQoFqQg17TGDdmvMdu0?e=OumEKT';
+
+// ── WEB SEARCH (NO API KEY) + UNANSWERED LOGGING ─────────────────────────────
+const PRODUCT_SITE = 'strandseurope.com';
+const UNANSWERED_KEY = 'strands_unanswered_v1';
+
+function googleSearchUrl(q) {
+  return 'https://www.google.com/search?q=' + encodeURIComponent(q);
+}
+
+function googleSiteSearchUrl(q, site = PRODUCT_SITE) {
+  return 'https://www.google.com/search?q=' + encodeURIComponent('site:' + site + ' ' + q);
+}
+
+function detectArticleNumbers(text) {
+  // Typical Strands article numbers are 6 digits (e.g., 809238).
+  const matches = text.match(/\b\d{6}\b/g) || [];
+  return [...new Set(matches)];
+}
+
+function loadUnanswered() {
+  try {
+    return JSON.parse(localStorage.getItem(UNANSWERED_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveUnanswered(items) {
+  try {
+    localStorage.setItem(UNANSWERED_KEY, JSON.stringify(items));
+  } catch (e) {
+    // ignore storage errors (private mode / quota)
+  }
+}
+
+function logUnanswered(query, meta = {}) {
+  const items = loadUnanswered();
+  items.push({
+    query: query,
+    lang: meta.lang || (typeof lang !== 'undefined' ? lang : 'en'),
+    articles: meta.articles || [],
+    ts: new Date().toISOString(),
+    ua: navigator.userAgent
+  });
+  // keep last 300 entries to avoid unbounded growth
+  if (items.length > 300) items.splice(0, items.length - 300);
+  saveUnanswered(items);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderUnansweredReport(limit = 15) {
+  const items = loadUnanswered();
+  const isSv = (typeof lang !== 'undefined' && lang === 'sv');
+  if (!items.length) {
+    return isSv ? 'Inga loggade obesvarade frågor ännu.' : 'No unanswered questions logged yet.';
+  }
+
+  // Count by exact query
+  const counts = new Map();
+  for (const it of items) {
+    const key = (it.query || '').trim();
+    if (!key || key.startsWith('/unanswered')) continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  const top = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+
+  const latest = (items[items.length - 1] && items[items.length - 1].ts) ? items[items.length - 1].ts : '';
+
+  const title = isSv ? 'Obesvarade frågor (topp)' : 'Unanswered questions (top)';
+  const total = isSv ? 'Totalt loggade' : 'Total logged';
+  const last = isSv ? 'Senast' : 'Latest';
+
+  let html = '<b>' + title + '</b><br>' + total + ': ' + items.length + '<br>' + last + ': ' + escapeHtml(latest) + '<br><br>';
+
+  html += top.map(([q, c], i) => {
+    const articles = detectArticleNumbers(q);
+    const productLinks = articles.length
+      ? '<br>' + articles.slice(0, 3).map(a => '🛍️ <a href="' + googleSiteSearchUrl(a) + '" target="_blank" rel="noopener">' + a + '</a>').join(' ')
+      : '';
+    return (i + 1) + '. (' + c + '×) ' + escapeHtml(q) + productLinks;
+  }).join('<br><br>');
+
+  html += '<br><br><i>' + (isSv ? 'Tips: skriv /unanswered clear för att rensa loggen.' : 'Tip: type /unanswered clear to wipe the log.') + '</i>';
+  return html;
+}
+
+function clearUnanswered() {
+  try { localStorage.removeItem(UNANSWERED_KEY); } catch (e) {}
+}
+
+
+// ── LANGUAGE DATA ─────────────────────────────────────────────────────────────
+let lang = 'en';
+
+const UI = {
+  en: {
+    title: 'Strands Support',
+    sub: 'FAQ Assistant · Always available · No login needed',
+    placeholder: 'Ask anything about Strands products...',
+    welcome: `Hi! 👋 I'm the Strands FAQ assistant. I can help you with:\n\n• Light technology (lumen, lux, Kelvin, ECE, IP rating)\n• Orders, delivery & returns\n• Warranty & claims\n• CAN bus & XBB installation\n• Product questions\n\nUse the tabs above to browse by topic, or just ask me anything!`,
+    tabs: ['All Topics','Tech & Facts','Orders & Delivery','Warranty & Returns','CAN bus & XBB','Products','Contact'],
+    tabKeys: ['all','tech','order','warranty','canbus','product','contact'],
+    fallback: `I'm not sure about that. Here are ways to get help:\n\n📧 <a href="mailto:support@strands.se">support@strands.se</a>\n📞 +46(0)320-450450\n📁 <a href="${SP}" target="_blank">Aftersales documents folder →</a>\n🔗 <a href="https://strandseurope.com" target="_blank">strandseurope.com →</a>`,
+    categories: {
+      all: ['What light technology types exist?','What is lumen and lux?','What are ECE regulations?','How long is the warranty?','How do I track my order?','Do I need a CAN bus interface?','What is IP rating?','How do I contact support?','Where are the Aftersales documents?'],
+      tech: ['What light technology types exist?','What is lumen and lux?','What is Kelvin?','What are beam patterns?','What are ECE regulations?','What is IP rating?','What amp rating do I need?'],
+      order: ['Is there a minimum order?','Can I change my order?','How long is delivery?','How do I track my order?','Do you offer express delivery?','I received the wrong product','Items missing from my order'],
+      warranty: ['How long is the warranty?','My product has broken','Does warranty cover modifications?','Can I cut the cable?','Can I cut the DT connector?','I want to return a product'],
+      canbus: ['Do I need a CAN bus interface?','Will XBB work with my new car?','Do I need resistors for LED taillights?','What happens after a software update?','Will high beam automatics work?'],
+      product: ['Which driving light should I choose?','What is No-Glare technology?','What is E-mode vs Xperience mode?','There is condensation in my light','Where can I find the manual?','Do you offer spare parts?'],
+      contact: ['How do I contact support?','How do I become a reseller?','What are your opening hours?','Where are the Aftersales documents?']
+    }
+  },
+  sv: {
+    title: 'Strands Support',
+    sub: 'FAQ-assistent · Alltid tillgänglig · Ingen inloggning krävs',
+    placeholder: 'Ställ en fråga om Strands produkter...',
+    welcome: `Hej! 👋 Jag är Strands FAQ-assistent. Jag kan hjälpa dig med:\n\n• Ljusteknik (lumen, lux, Kelvin, ECE, IP-klass)\n• Order, leverans & retur\n• Garanti & reklamation\n• CAN bus & XBB-installation\n• Produktfrågor\n\nAnvänd flikarna ovan för att bläddra efter ämne, eller ställ din fråga direkt!`,
+    tabs: ['Alla ämnen','Teknik & fakta','Order & leverans','Garanti & retur','CAN bus & XBB','Produkter','Kontakt'],
+    tabKeys: ['all','tech','order','warranty','canbus','product','contact'],
+    fallback: `Jag är osäker på det. Här är sätt att få hjälp:\n\n📧 <a href="mailto:support@strands.se">support@strands.se</a>\n📞 +46(0)320-450450\n📁 <a href="${SP}" target="_blank">Aftersales-dokumentmapp →</a>\n🔗 <a href="https://strandseurope.com" target="_blank">strandseurope.com →</a>`,
+    categories: {
+      all: ['Vilka ljustekniker finns?','Vad är lumen och lux?','Vad är ECE-reglerna?','Hur lång är garantin?','Hur spårar jag min beställning?','Behöver jag Canbus-interface?','Vad är IP-klassning?','Hur kontaktar jag support?','Var finns Aftersales-dokument?'],
+      tech: ['Vilka ljustekniker finns?','Vad är lumen och lux?','Vad är Kelvin?','Vilka ljusbilder finns?','Vad är ECE-reglerna?','Vad är IP-klassning?','Vilket amperetal behöver jag?'],
+      order: ['Finns det en minsta ordergräns?','Kan jag ändra min beställning?','Hur lång är leveranstiden?','Hur spårar jag min beställning?','Erbjuder ni expressfrakt?','Jag har fått fel vara','Det saknas varor i min beställning'],
+      warranty: ['Hur lång är garantin?','Min produkt har gått sönder','Gäller garantin vid modifiering?','Får jag klippa kabeln?','Får jag klippa DT-kontakten?','Jag vill returnera en produkt'],
+      canbus: ['Behöver jag Canbus-interface?','Fungerar XBB med min nya bil?','Behöver jag motstånd till LED?','Vad händer efter mjukvaruuppdatering?','Fungerar helljusautomatik?'],
+      product: ['Vilket extraljus passar min bil?','Vad är No-Glare?','Vad är E-mode och Xperience?','Det är kondens i min lampa','Var finns produktmanualen?','Erbjuder ni reservdelar?'],
+      contact: ['Hur kontaktar jag support?','Jag vill bli återförsäljare','Vilka är öppettiderna?','Var finns Aftersales-dokument?']
+    }
+  }
+};
+
+// ── BILINGUAL FAQ ─────────────────────────────────────────────────────────────
+const FAQ = [
+  // TECH
+  {
+    cat: 'tech',
+    keywords: { en: ['light technology','halogen','xenon','led','types of lights','kind of technology'], sv: ['ljusteknik','halogen','xenon','led','ljustekniker','typ av ljus','lampor teknik'] },
+    answer: {
+      en: `The most common types are halogen, xenon, and LED:\n\n💡 Halogen — Uses halogen gas and a filament. Brighter than regular bulbs but less luminous and shorter lifespan than xenon or LED. Generates significant heat.\n\n💡 Xenon — Contains xenon gas, no filament. Longer lifespan, less power consumption than halogen. Takes a moment to reach full brightness. Also generates heat.\n\n💡 LED — Most modern and most common in Strands products:\n• Very long lifespan\n• Low power consumption\n• Short ignition time\n• Better resistance to vibrations\n\n🔗 <a href="https://strands.se/kunskapsbank/valj-ratt-extraljus-den-ultimata-guiden/" target="_blank">Read more in our knowledge bank →</a>`,
+      sv: `De vanligaste teknikerna är halogen, xenon och LED:\n\n💡 Halogen — Glödtråd och halogengas. Starkare än vanliga glödlampor men svagare och kortare livslängd än xenon och LED. Hög värmeutveckling.\n\n💡 Xenon — Innehåller xenongas, ingen glödtråd. Längre livslängd och lägre strömförbrukning än halogen. Tar lite tid att nå full styrka. Hög värmeutveckling.\n\n💡 LED — Modernaste tekniken och vanligast i Strands sortiment:\n• Mycket lång livslängd\n• Låg strömförbrukning\n• Kort upptändningstid\n• Klarar vibrationer bättre\n\n🔗 <a href="https://strands.se/kunskapsbank/valj-ratt-extraljus-den-ultimata-guiden/" target="_blank">Läs mer i vår kunskapsbank →</a>`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['lumen','lux','light output','brightness','intensity','luminous'], sv: ['lumen','lux','ljusstyrka','ljusflöde','intensitet','luminans'] },
+    answer: {
+      en: `Lumen and lux explained:\n\n📏 Lumen — Measures the luminous flux (strength) from a light source. Strands always refers to actual lumens, not theoretical values.\n\n📏 Lux — Measures illuminance (light hitting a surface). 1 lux = 1 lumen/m². Driving lights often use "1 lux @ x meters" — e.g. 1 lux @ 700m means 1 lumen/m² at 700 meters from the vehicle.\n\n🔬 Strands has an advanced light laboratory where all lights are tested for accurate measurements.`,
+      sv: `Lumen och lux förklarat:\n\n📏 Lumen — Mäter ljusflödet från en ljuskälla. Strands anger alltid faktiska lumen, inte teoretiska värden.\n\n📏 Lux — Mäter luminansen (hur mycket ljus som träffar en yta). 1 lux = 1 lumen/m². Extraljus anges ofta som "1 lux @ x meter" — t.ex. 1 lux @ 700 m innebär 1 lumen/m² på 700 meters avstånd.\n\n🔬 Strands har ett avancerat ljuslaboratorium där alla lampor testas för korrekta mätvärden.`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['kelvin','color temperature','warm','cool','white light'], sv: ['kelvin','färgtemperatur','varm','kall','vitt ljus','färg'] },
+    answer: {
+      en: `Kelvin is a measure of color temperature:\n\n🌡️ Higher Kelvin = cooler, bluer light\n🌡️ Lower Kelvin = warmer, redder light\n\nFor driving and work lights, a cooler color temperature is usually ideal — clear, distinct beam, easy to see ahead. A warmer temperature can reduce glare in rain and snow.`,
+      sv: `Kelvin är ett mått på färgtemperatur:\n\n🌡️ Högre Kelvin = kallare, blåare ljus\n🌡️ Lägre Kelvin = varmare, rödare ljus\n\nFör extra- och arbetsbelysning passar oftast en kallare färgtemperatur bäst — tydlig ljusbild och enkelt att se framåt. Varmare temperatur kan minska reflexer vid regn och snö.`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['beam pattern','beam','flood','combo','pencil','optimized','extended','long-distance'], sv: ['ljusbild','flood','combo','pencil','optimized','extended','long-distance','ljusbilder','bred','smal','räckvidd'] },
+    answer: {
+      en: `Strands offers three main beam patterns:\n\n🔦 Optimized (Flood) — Widest beam. Best for winding roads — spots animals and hazards on the sides.\n\n🔦 Extended (Combo) — Width and distance combined. A versatile all-rounder.\n\n🔦 Long-distance (Pencil) — Narrow beam, maximum range. Best for long straight roads like highways.`,
+      sv: `Strands har tre huvudsakliga ljusbilder:\n\n🔦 Optimized (Flood) — Bredaste ljusbilden. Bäst för kurviga vägar där du behöver se djur och faror längs kanten.\n\n🔦 Extended (Combo) — Kombination av bredd och längd. Mångsidig.\n\n🔦 Long-distance (Pencil) — Smal ljusbild med maximalt lång räckvidd. Bäst för långa raka vägar.`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['ece','e-approved','regulations','legal','road legal','approval'], sv: ['ece','e-godkänt','reglemente','laglig','godkännande','ecr','r112'] },
+    answer: {
+      en: `ECE regulations govern which lights are permitted on vehicles, their intensity, and how/where they can be installed.\n\nKey rules:\n• Driving lights must not be too powerful\n• Position lights must have the correct color\n• Placement and quantity rules apply\n• Many Strands lights have E-mode (approved) and Xperience mode\n\nECE categories:\n• ECE R6 – Indicators\n• ECE R7 – Position, tail, brake lights\n• ECE R19 – Front fog lights\n• ECE R65 – Warning lights\n• ECE R87 – Daytime running lights\n• ECE R91 – Side marker lights\n• ECE R98 – Xenon headlamps\n• ECE R112 – Halogen and LED headlamps`,
+      sv: `ECE-reglementet reglerar vilka lampor du får ha, deras intensitet och hur/var de ska installeras.\n\nViktiga regler:\n• Ett extraljus får inte vara för starkt\n• Positionsljus måste ha rätt färg\n• Regler för antal och placering gäller\n• Många Strands-lampor har E-läge (godkänt) och Xperience-läge\n\nECE-kategorier:\n• ECE R6 – Blinkers\n• ECE R7 – Positions-, bak-, bromslampor\n• ECE R19 – Dimstrålkastare\n• ECE R65 – Varningsljus\n• ECE R87 – Varselljus\n• ECE R91 – Sidomarkeringsljus\n• ECE R98 – Xenon-strålkastare\n• ECE R112 – Halogen- och LED-strålkastare`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['ip rating','ip class','waterproof','dustproof','water protection'], sv: ['ip-klassning','ip-klass','vattentät','dammtät','vattenskydd','ip66'] },
+    answer: {
+      en: `IP rating indicates protection against solids and liquids:\n\nFirst digit (dust, 0–6):\n• 5 = Dust protected\n• 6 = Dust-tight\n\nSecond digit (water):\n• 5 = Water jets from nozzle\n• 6 = Powerful water jets\n• 7 = Temporary submersion\n• 8 = Continuous immersion\n• 9(K) = High-pressure/high-temp water\n\nExample: IP66 = dust-tight + powerful water jets.`,
+      sv: `IP-klassning anger skydd mot fasta ämnen och vatten:\n\nFörsta siffran (damm, 0–6):\n• 5 = Dammskyddad\n• 6 = Dammtät\n\nAndra siffran (vatten):\n• 5 = Skyddad mot spolande vatten\n• 6 = Skyddad mot kraftig överspolning\n• 7 = Tillfällig nedsänkning\n• 8 = Långvarig nedsänkning\n• 9(K) = Högtrycks-/varmvatten\n\nExempel: IP66 = dammtät + kraftig vattenspolning.`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['relay','fuse','cable','amp','ampere','installation','wire'], sv: ['relä','säkring','kabel','ampere','installation','kabeldiameter','kabelarea'] },
+    answer: {
+      en: `Guidelines for relay, fuse and cable:\n\n• Relay: At least 10% above max load, and higher amp than fuse\n• Fuse: Just above total max load — always the weakest link\n• Cable: Depends on load, length, and cable material — no universal answer\n\n⚠️ If unsure, consult a vehicle electrician.`,
+      sv: `Riktlinjer för relä, säkring och kabel:\n\n• Relä: Minst 10% över maxeffekten, och högre ampere än säkringen\n• Säkring: Strax över total maxeffekt — alltid den svagaste länken\n• Kabelarea: Beror på effekt, längd och material — inget generellt svar\n\n⚠️ Är du osäker, anlita en fordonselektriker.`
+    }
+  },
+  {
+    cat: 'tech',
+    keywords: { en: ['side marker','indicator','blinker','e-approved side'], sv: ['sidomarkering','blinkers','godkänd sidomarkering','e-godkänd'] },
+    answer: {
+      en: `Can you use an E-approved side marker as an indicator?\n\nNo. If a product is only E-approved as a side marker, it may only be used as a side marker. All functions must be individually E-approved for their intended use.`,
+      sv: `Kan jag använda en E-godkänd sidomarkering som blinkers?\n\nNej. Om produkten bara är godkänd som sidomarkering får den bara användas som sidomarkering. Alla funktioner måste vara E-godkända för respektive ändamål.`
+    }
+  },
+  // ORDER
+  {
+    cat: 'order',
+    keywords: { en: ['minimum order','order limit','smallest order'], sv: ['minsta order','ordergräns','minsta beställning','lägsta order'] },
+    answer: { en: `There is no minimum order limit at Strands. Order as little or as much as you need! 🛒`, sv: `Det finns ingen minsta ordergräns hos Strands. Beställ hur lite eller mycket du vill! 🛒` }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['change order','modify order','cancel order','edit order'], sv: ['ändra beställning','ändra order','avboka','avbryta beställning'] },
+    answer: {
+      en: `Orders are processed promptly — no changes can be made once confirmed (including delivery address).\n\nIf not yet confirmed:\n📞 +46(0)320-450450\n🕐 08:00–17:00 business days`,
+      sv: `Beställningar behandlas omgående — inga ändringar kan göras när beställningen är bekräftad (inkl. leveransadress).\n\nOm den inte är bekräftad ännu:\n📞 +46(0)320-450450\n🕐 08:00–17:00 vardagar`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['track order','tracking','where is my order','follow package','shipment'], sv: ['spåra beställning','spåra paket','var är mitt paket','leveransbesked','tracking'] },
+    answer: {
+      en: `Once your order is shipped, you'll receive an email with a tracking link. You can also track via the PostNord app.`,
+      sv: `När din beställning skickats får du ett mejl med spårningslänk. Du kan även följa paketet via PostNords app.`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['express delivery','express shipping','fast delivery','urgent'], sv: ['expressfrakt','snabb leverans','expresslevrans','bråttom'] },
+    answer: {
+      en: `Unfortunately Strands does not offer express delivery. We ship via PostNord which has no express option.`,
+      sv: `Tyvärr erbjuder Strands ingen expressfrakt. Vi skickar via PostNord som inte erbjuder express.`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['delivery time','how long','shipping time','when will'], sv: ['leveranstid','hur lång','leverans tid','när kommer'] },
+    answer: {
+      en: `🇸🇪 Sweden: Approximately 1–4 business days.\n🌍 International: Contact us at support@strands.se for an estimate.`,
+      sv: `🇸🇪 Sverige: Uppskattningsvis 1–4 vardagar.\n🌍 Utomlands: Kontakta oss på support@strands.se för uppskattad leveranstid.`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['missing item','items missing','incomplete order'], sv: ['saknas varor','saknade varor','ofullständig beställning','varor saknas'] },
+    answer: {
+      en: `Missing items? The item may be on backorder or a picking error occurred.\n\n📧 support@strands.se\n📞 +46(0)320-450450`,
+      sv: `Saknas varor? Varan kan vara restnoterad eller så har ett plockfel skett.\n\n📧 support@strands.se\n📞 +46(0)320-450450`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['wrong product','wrong item','received wrong'], sv: ['fel vara','fel produkt','fick fel'] },
+    answer: {
+      en: `We apologize for the mix-up! Contact us and we'll assist promptly:\n\n📧 support@strands.se\n📞 +46(0)320-450450`,
+      sv: `Vi beklagar felet! Kontakta oss så hjälper vi dig direkt:\n\n📧 support@strands.se\n📞 +46(0)320-450450`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['broken delivery','damaged','arrived broken','broken product received'], sv: ['trasig vara','skadad vara','trasig leverans','skadad förpackning'] },
+    answer: {
+      en: `Received a broken product?\n\n1. Check if outer packaging is damaged → contact the transport company\n2. Then contact Strands:\n📧 support@strands.se\n📞 +46(0)320-450450`,
+      sv: `Fått en trasig vara?\n\n1. Kontrollera om ytterförpackningen är skadad → kontakta transportföretaget\n2. Kontakta sedan Strands:\n📧 support@strands.se\n📞 +46(0)320-450450`
+    }
+  },
+  {
+    cat: 'order',
+    keywords: { en: ['reseller','become reseller','retailer','dealer'], sv: ['återförsäljare','bli återförsäljare','distributör','sälja strands'] },
+    answer: {
+      en: `Interested in becoming a Strands reseller?\n\n📧 order@strands.se\n🔗 <a href="https://strandseurope.com/sv/become-a-retailer" target="_blank">Fill in the form →</a>`,
+      sv: `Intresserad av att bli Strands-återförsäljare?\n\n📧 order@strands.se\n🔗 <a href="https://strandseurope.com/sv/become-a-retailer" target="_blank">Fyll i formuläret →</a>`
+    }
+  },
+  // WARRANTY
+  {
+    cat: 'warranty',
+    keywords: { en: ['warranty','guarantee','how long warranty','warranty period'], sv: ['garanti','garantitid','hur lång garanti','garantiperiod'] },
+    answer: {
+      en: `Strands Lighting Division (SLD) products: 3–6 year warranty.\nOther ranges: typically 1 year.\n\nCovers manufacturing defects. Does NOT cover incorrect use or installation.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Full warranty terms →</a>\n📁 <a href="${SP}" target="_blank">Aftersales documents folder →</a>`,
+      sv: `Strands Lighting Division (SLD)-produkter: 3–6 års garanti.\nÖvriga produktsortiment: normalt 1 år.\n\nTäcker tillverkningsfel. Täcker INTE felaktig användning eller installation.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Fullständiga garantivillkor →</a>\n📁 <a href="${SP}" target="_blank">Aftersales-dokumentmapp →</a>`
+    }
+  },
+  {
+    cat: 'warranty',
+    keywords: { en: ['product broken','stopped working','warranty claim','submit claim','make a claim'], sv: ['produkt gått sönder','slutat fungera','reklamation','garantiärende','anmäla garanti'] },
+    answer: {
+      en: `Product broken?\n\n• Bought from a retailer → contact the retailer\n• Direct claim with Strands:\n📧 reklamation@strands.se\n\n🔗 <a href="https://strandseurope.com/sv/contact/claims-and-returns" target="_blank">Claims & returns →</a>\n📁 <a href="${SP}" target="_blank">Aftersales documents folder →</a>`,
+      sv: `Produkt gått sönder?\n\n• Köpt från återförsäljare → kontakta återförsäljaren\n• Direkt reklamation hos Strands:\n📧 reklamation@strands.se\n\n🔗 <a href="https://strandseurope.com/sv/contact/claims-and-returns" target="_blank">Reklamation & retur →</a>\n📁 <a href="${SP}" target="_blank">Aftersales-dokumentmapp →</a>`
+    }
+  },
+  {
+    cat: 'warranty',
+    keywords: { en: ['return','regret','cancel','right of withdrawal','ordered wrong'], sv: ['retur','ångra','ångervrätt','returnera','beställt fel'] },
+    answer: {
+      en: `Returning a purchase:\n\nNote: Right of withdrawal does not apply to B2B transactions.\n\nHowever, Strands takes a flexible approach — contact us as early as possible:\n📧 support@strands.se\n🔗 <a href="https://strandseurope.com/sv/contact/claims-and-returns" target="_blank">Claims & returns →</a>`,
+      sv: `Returnera ett köp:\n\nObs: Ångerrätten gäller inte för B2B-transaktioner.\n\nStrands är lösningsorienterade — kontakta oss så tidigt som möjligt:\n📧 support@strands.se\n🔗 <a href="https://strandseurope.com/sv/contact/claims-and-returns" target="_blank">Reklamation & retur →</a>`
+    }
+  },
+  {
+    cat: 'warranty',
+    keywords: { en: ['cut dt connector','dt connector','dt plug'], sv: ['klippa dt-kontakt','dt-kontakt','dt kontakt'] },
+    answer: {
+      en: `No, the warranty does NOT apply if you cut the DT connector.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Warranty terms →</a>`,
+      sv: `Nej, garantin gäller INTE om du klipper av DT-kontakten.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Garantivillkor →</a>`
+    }
+  },
+  {
+    cat: 'warranty',
+    keywords: { en: ['cut cable','shorten cable','cable length'], sv: ['klippa kabeln','korta kabeln','kabellängd'] },
+    answer: {
+      en: `The warranty does not apply if you cut the cable shorter than 50 cm.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Warranty terms →</a>`,
+      sv: `Garantin gäller inte om du klipper kabeln kortare än 50 cm.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Garantivillkor →</a>`
+    }
+  },
+  {
+    cat: 'warranty',
+    keywords: { en: ['modify product','modification','warranty void','tamper','disassemble','opened'], sv: ['modifiera','öppna','demontera','modifiering','garanti ogiltig'] },
+    answer: {
+      en: `Modifying or disassembling a product:\n\n• Modifying the product → warranty is void\n• Opening a sealed product (e.g. LED bar) → warranty expires\n• Opening products designed to be opened (e.g. halogen lamp to change bulb) → warranty maintained\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Warranty terms →</a>`,
+      sv: `Modifiera eller öppna en produkt:\n\n• Modifiera produkten → garantin upphör\n• Öppna en förseglad produkt (t.ex. LED-bar) → garantin upphör\n• Öppna produkter avsedda att öppnas (t.ex. halogenlampa för byte av glödlampa) → garantin gäller\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Garantivillkor →</a>`
+    }
+  },
+  {
+    cat: 'warranty',
+    keywords: { en: ['paint','lacquer','spray paint','painted light'], sv: ['lacka','lackera','måla','spraya','lack'] },
+    answer: {
+      en: `Painting a driving light depends on the product — check the manual.\n\nIf you do paint it:\n• Protect the breather vent\n• Do NOT use an oven to cure the paint\n\nOtherwise the warranty may be void.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Warranty terms →</a>`,
+      sv: `Om lackering påverkar garantin beror på produkten — kontrollera manualen.\n\nOm du ändå lackar:\n• Skydda andningshålet\n• Använd INTE ugn för härdning\n\nAnnars kan garantin upphöra.\n\n🔗 <a href="https://strandseurope.com/sv/about-us/function-warranty" target="_blank">Garantivillkor →</a>`
+    }
+  },
+  // CAN BUS
+  {
+    cat: 'canbus',
+    keywords: { en: ['canbus interface','can bus','270417','when do i need interface'], sv: ['canbus interface','can bus','270417','när behövs interface','behöver jag interface'] },
+    answer: {
+      en: `When do you need a CAN bus interface (Part No. 270417)?\n\nWhen you want driving lights to activate with the high beam AND your vehicle only delivers a current pulse (not constant power) to the high beam.\n\nMainly needed for xenon or LED headlamp vehicles.\n\nNote: Connecting directly to battery with a separate switch works without CAN bus issues, but won't activate with the high beam.`,
+      sv: `När behövs Canbus Interface (art.nr 270417)?\n\nNär du vill att extraljuset ska aktiveras med helljuset OCH bilen bara levererar en strömimpuls (inte konstant ström) till helljuset.\n\nHuvudsakligen för bilar med xenon- eller LED-strålkastare.\n\nObs: Kopplar du direkt till batteri med separat reglage slipper du canbus-problem, men ljuset aktiveras inte med helljuset.`
+    }
+  },
+  {
+    cat: 'canbus',
+    keywords: { en: ['high beam automatic','adaptive high beam','auto high beam'], sv: ['helljusautomatik','adaptivt helljus','automatiskt helljus'] },
+    answer: {
+      en: `Adaptive/automatic high beam will NOT work with the CAN bus interface (270417).\n\nIt still works in manual high beam mode.`,
+      sv: `Helljusautomatik fungerar INTE med Canbus Interface (270417).\n\nManuellt helljus fungerar fortfarande.`
+    }
+  },
+  {
+    cat: 'canbus',
+    keywords: { en: ['software update','car update','can bus after update'], sv: ['mjukvaruuppdatering','biluppdatering','canbus efter uppdatering','service uppdatering'] },
+    answer: {
+      en: `After a car software update:\n\nThe CAN bus interface may stop working as the car may use a new signal. It needs to be updated through Nitor.\n\n⚠️ If the interface is more than 12 months old, it cannot be updated and may need replacing.`,
+      sv: `Efter en biluppdatering:\n\nCanbus-interfacet kan sluta fungera eftersom bilen kan använda en ny signal. Det behöver uppdateras via Nitor.\n\n⚠️ Om interfacet är äldre än 12 månader kan det inte uppdateras och kan behöva bytas.`
+    }
+  },
+  {
+    cat: 'canbus',
+    keywords: { en: ['resistor','led taillights','tail light','canbus error','load resistor'], sv: ['motstånd','led-bakljus','bakljus','canbus fel','load resistor'] },
+    answer: {
+      en: `Do you need resistors for LED taillights?\n\nDepends on the car — some work fine, others need a resistor to trick the computer.\n\n💡 Try without resistor first. If it doesn't work, add a resistor.`,
+      sv: `Behöver du motstånd till LED-bakljus?\n\nBeror på bilen — vissa fungerar fint, andra behöver motstånd för att lura bilens dator.\n\n💡 Prova utan motstånd först. Om det inte fungerar, köp ett motstånd.`
+    }
+  },
+  {
+    cat: 'canbus',
+    keywords: { en: ['xbb dongle new car','will xbb work','obd port locked','firewall obd','pp-can','secure gateway'], sv: ['xbb ny bil','fungerar xbb','obd port låst','firewall obd','pp-can','secure gateway'] },
+    answer: {
+      en: `Will XBB Dongle work with your new car? Probably yes — check two things:\n\n1. Recipe: Check the compatible vehicle list:\n🔗 <a href="https://www.xbb.se/xbbTable/bilmodeller.php" target="_blank">Compatible car list →</a>\n\n2. OBD Port: Some newer vehicles (Volvo post-2017, certain Mercedes, newer VAG) have a Secure Gateway blocking the Dongle.\n\n• Open OBD port: Kit 270425 + wiring 907003\n• Locked OBD port: PP-CAN + wiring 907051/907052\n• No OBD port: PP-CAN-FD (requires technical knowledge)\n\n💡 Contact us with your registration number:\n📧 support@strands.se`,
+      sv: `Fungerar XBB Dongle med din nya bil? Förmodligen ja — kontrollera två saker:\n\n1. Receptet: Kolla listan över kompatibla bilar:\n🔗 <a href="https://www.xbb.se/xbbTable/bilmodeller.php" target="_blank">Lista kompatibla bilar →</a>\n\n2. OBD-port: Nyare bilar (Volvo efter 2017, vissa Mercedes, nyare VAG) kan ha Secure Gateway som blockerar Dongeln.\n\n• Öppen OBD-port: Kit 270425 + kablage 907003\n• Låst OBD-port: PP-CAN + kablage 907051/907052\n• Ingen OBD-port: PP-CAN-FD (kräver teknisk kunskap)\n\n💡 Kontakta oss med ditt reg.nr:\n📧 support@strands.se`
+    }
+  },
+  // PRODUCTS
+  {
+    cat: 'product',
+    keywords: { en: ['which light','which driving light','choose light','what light for my car'], sv: ['vilket extraljus','vilket ljus','välja ljus','passar min bil','rätt ljus'] },
+    answer: {
+      en: `Choosing the right driving light:\n\n🚛 Large car/truck → 9" driving light or large LED bar\n🚐 LCV/regular car → 7" driving light or slim LED bar\n\nBeam patterns:\n• Highway/mountain → Long-distance/pencil\n• Forest/country → Optimized/flood (wider)\n• All-round → Extended/combo\n\n🔗 <a href="https://strandseurope.com" target="_blank">Browse Strands products →</a>`,
+      sv: `Välja rätt extraljus:\n\n🚛 Stor bil/lastbil → 9" extraljus eller stor LED-bar\n🚐 Lätt lastbil/vanlig bil → 7" extraljus eller smal LED-bar\n\nLjusbilder:\n• Motorväg/fjällväg → Long-distance/pencil\n• Skogs-/landsväg → Optimized/flood (bredare)\n• Allrond → Extended/combo\n\n🔗 <a href="https://strandseurope.com" target="_blank">Hitta Strands-produkter →</a>`
+    }
+  },
+  {
+    cat: 'product',
+    keywords: { en: ['no-glare','noglare','glare','blinding','for9t'], sv: ['no-glare','bländning','bländfri','for9t'] },
+    answer: {
+      en: `No-Glare technology (FOR9T):\n\nThe unique lens divides light output — stronger in the lower beam, more diffused higher up. Less blinding than conventional work lights while still projecting a focused beam exactly where needed.`,
+      sv: `No-Glare-tekniken (FOR9T):\n\nDen unika linsen delar upp ljusutflödet — starkare i den nedre delen av strålen, mer diffust högre upp. Mindre bländande än konventionella arbetsljus, men projicerar ändå en fokuserad ljusbild precis där det behövs.`
+    }
+  },
+  {
+    cat: 'product',
+    keywords: { en: ['e-mode','xperience mode','two modes','light modes'], sv: ['e-läge','xperience-läge','e-mode','xperience mode','två lägen'] },
+    answer: {
+      en: `E-mode vs Xperience mode:\n\n✅ E-mode — E-approved, road legal. A significant boost to your high beam. Less glare in rain/snow.\n\n⚡ Xperience mode — Maximum power. Best luminosity and range. For very dark and challenging conditions.`,
+      sv: `E-läge vs Xperience-läge:\n\n✅ E-läge — E-godkänt och lagligt. Kraftigt tillskott till helljuset. Mindre reflexer vid regn/snö.\n\n⚡ Xperience-läge — Maximal effekt. Bästa ljusstyrka och räckvidd. För väldigt mörka och krävande förhållanden.`
+    }
+  },
+  {
+    cat: 'product',
+    keywords: { en: ['condensation','moisture','water inside lamp','fog inside'], sv: ['kondens','fukt','vatten i lampan','imma','kondensvatten'] },
+    answer: {
+      en: `Condensation inside a lamp is normal — caused by humidity and temperature changes. Most Strands lights have a breather vent. The moisture will dissipate when you use the lamp. No action needed.`,
+      sv: `Kondens inuti en lampa är normalt — orsakas av hög luftfuktighet och temperaturväxlingar. De flesta Strands-lampor har ett andningshål. Fukten försvinner när du använder lampan. Ingen åtgärd behövs.`
+    }
+  },
+  {
+    cat: 'product',
+    keywords: { en: ['manual','instruction','user guide','find manual'], sv: ['manual','instruktion','bruksanvisning','hitta manual','produktmanual'] },
+    answer: {
+      en: `Find the product manual on the product page at strandseurope.com.\n\nCan't find it?\n📧 support@strands.se\n📁 <a href="${SP}" target="_blank">Aftersales documents folder →</a>`,
+      sv: `Hitta produktmanualen på produktsidan på strandseurope.com.\n\nHittar du den inte?\n📧 support@strands.se\n📁 <a href="${SP}" target="_blank">Aftersales-dokumentmapp →</a>`
+    }
+  },
+  {
+    cat: 'product',
+    keywords: { en: ['spare parts','replacement parts','spare'], sv: ['reservdelar','ersättningsdelar','reservdel'] },
+    answer: {
+      en: `Strands can sometimes offer spare parts and mounting accessories.\n\n📧 support@strands.se\n🔗 <a href="https://strandseurope.com/sv/kategorier/monteringstillbehor/fasten" target="_blank">Browse mounting accessories →</a>`,
+      sv: `Strands kan i vissa fall erbjuda reservdelar och monteringstillbehör.\n\n📧 support@strands.se\n🔗 <a href="https://strandseurope.com/sv/kategorier/monteringstillbehor/fasten" target="_blank">Se monteringstillbehör →</a>`
+    }
+  },
+  {
+    cat: 'product',
+    keywords: { en: ['repair','repairs','fix product'], sv: ['reparation','laga','reparera produkt'] },
+    answer: {
+      en: `Strands does not offer product repairs. Most products are sealed from the factory. Submit a warranty claim instead:\n\n📧 reklamation@strands.se\n🔗 <a href="https://strandseurope.com/sv/contact/claims-and-returns" target="_blank">Claims & returns →</a>`,
+      sv: `Strands erbjuder inte produktreparationer. De flesta produkter är förseglade från fabriken. Skicka in en reklamation istället:\n\n📧 reklamation@strands.se\n🔗 <a href="https://strandseurope.com/sv/contact/claims-and-returns" target="_blank">Reklamation & retur →</a>`
+    }
+  },
+  // CONTACT
+  {
+    cat: 'contact',
+    keywords: { en: ['contact','support','phone','email','reach','customer service','help','opening hours'], sv: ['kontakt','support','telefon','mejl','kundservice','hjälp','öppettider','kontakta'] },
+    answer: {
+      en: `Strands contact:\n\n📞 +46(0)320-450450\n📧 Customer service: order@strands.se\n📧 Technical support: support@strands.se\n📧 Warranty claims: reklamation@strands.se\n\n🕐 08:00–17:00 business days\nEmail response within 24 hours on business days.\n\n🏢 Strands Group AB, Hagalundsvägen, 51172 Fritsla, Sweden\n\n📁 <a href="${SP}" target="_blank">Aftersales documents folder →</a>`,
+      sv: `Strands kontakt:\n\n📞 +46(0)320-450450\n📧 Kundservice: order@strands.se\n📧 Teknisk support: support@strands.se\n📧 Reklamation: reklamation@strands.se\n\n🕐 08:00–17:00 vardagar\nMejlsvar inom 24 timmar på vardagar.\n\n🏢 Strands Group AB, Hagalundsvägen, 51172 Fritsla, Sverige\n\n📁 <a href="${SP}" target="_blank">Aftersales-dokumentmapp →</a>`
+    }
+  },
+  {
+    cat: 'contact',
+    keywords: { en: ['document','documents','download','file','folder','sharepoint','aftersales'], sv: ['dokument','ladda ner','fil','mapp','sharepoint','aftersales','aftersales-dokument'] },
+    answer: {
+      en: `Access all Aftersales documents (manuals, warranty terms, return forms, etc.):\n\n📁 <a href="${SP}" target="_blank">Open Aftersales documents folder →</a>\n\n⚠️ You need to be logged in with your Strands Microsoft 365 account.\n\nCan't find what you need?\n📧 support@strands.se`,
+      sv: `Tillgång till alla Aftersales-dokument (manualer, garantivillkor, returformulär m.m.):\n\n📁 <a href="${SP}" target="_blank">Öppna Aftersales-dokumentmapp →</a>\n\n⚠️ Du behöver vara inloggad med ditt Strands Microsoft 365-konto.\n\nHittar du inte det du söker?\n📧 support@strands.se`
+    }
+  },
+  {
+    cat: 'contact',
+    keywords: { en: ['images','photos','copyright','use images','use text','permission'], sv: ['bilder','foton','copyright','använda bilder','använda text','upphovsrätt'] },
+    answer: {
+      en: `Can you use Strands images/text on your website?\n\nAs a rule, no. All content is protected under copyright law. Contact Strands first for permission.`,
+      sv: `Får du använda Strands bilder/text på din webbplats?\n\nSom regel nej. Allt innehåll skyddas av upphovsrätten. Kontakta Strands först för tillstånd.`
+    }
+  }
+];
+
+// ── ENGINE ────────────────────────────────────────────────────────────────────
+function findAnswer(query) {
+  const q = query.toLowerCase();
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const faq of FAQ) {
+    let score = 0;
+    const kws = faq.keywords[lang] || faq.keywords.en;
+    for (const kw of kws) {
+      if (q.includes(kw.toLowerCase())) score += kw.split(' ').length;
+    }
+    // also check other language keywords
+    const kws2 = faq.keywords[lang === 'en' ? 'sv' : 'en'] || [];
+    for (const kw of kws2) {
+      if (q.includes(kw.toLowerCase())) score += Math.ceil(kw.split(' ').length / 2);
+    }
+    if (score > bestScore) { bestScore = score; bestMatch = faq; }
+  }
+
+  if (bestScore > 0) return bestMatch.answer[lang] || bestMatch.answer.en;
+  const fallback = UI[lang].fallback;
+  const g = googleSearchUrl(query);
+  const gs = googleSiteSearchUrl(query, PRODUCT_SITE);
+  const articles = detectArticleNumbers(query);
+
+  // Log unanswered queries so you can see what users miss most (stored locally in the browser).
+  logUnanswered(query, { lang, articles });
+
+  const articleBlock = articles.length ? (
+    '<br><br>🛍️ <b>' + (lang === 'sv' ? 'Produktsida' : 'Product page') + '</b>: ' +
+    articles.slice(0, 3)
+      .map(a => '<a href="' + googleSiteSearchUrl(a, PRODUCT_SITE) + '" target="_blank" rel="noopener">' + a + '</a>')
+      .join(' · ')
+  ) : '';
+
+  return fallback + articleBlock +
+    '<br><br>🔎 <a href="' + g + '" target="_blank" rel="noopener">' + (lang === 'sv' ? 'Sök på Google efter' : 'Search Google for') + ': “' + escapeHtml(query) + '”</a>' +
+    '<br>🌐 <a href="' + gs + '" target="_blank" rel="noopener">' + (lang === 'sv' ? 'Sök på strandseurope.com efter' : 'Search strandseurope.com for') + ': “' + escapeHtml(query) + '”</a>';
+}
+
+// ── UI FUNCTIONS ──────────────────────────────────────────────────────────────
+function setLang(l, btn) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('h-title').textContent = UI[lang].title;
+  document.getElementById('h-sub').textContent = UI[lang].sub;
+  document.getElementById('userInput').placeholder = UI[lang].placeholder;
+  renderTabs('all');
+  renderSuggestions('all');
+  // Clear messages and show welcome in new language
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  addMessage('bot', UI[lang].welcome);
+}
+
+function renderTabs(activeCat) {
+  const u = UI[lang];
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = u.tabs.map((t, i) =>
+    `<button class="tab-btn ${u.tabKeys[i] === activeCat ? 'active' : ''}" onclick="setCategory('${u.tabKeys[i]}', this)">${t}</button>`
+  ).join('');
+}
+
+function renderSuggestions(cat) {
+  const qs = UI[lang].categories[cat] || UI[lang].categories.all;
+  const sugg = document.getElementById('suggestions');
+  sugg.style.display = 'flex';
+  sugg.innerHTML = qs.map(q => `<button class="suggestion-btn" onclick="ask(this)">${q}</button>`).join('');
+}
+
+function setCategory(cat, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSuggestions(cat);
+}
+
+function addMessage(role, html) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  div.innerHTML = `
+    <div class="avatar ${role}-avatar">${role === 'bot' ? 'STR' : lang === 'sv' ? 'Du' : 'You'}</div>
+    <div class="bubble">${html.replace(/\n/g, '<br>')}</div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function showTyping() {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message bot'; div.id = 'typing';
+  div.innerHTML = `<div class="avatar bot-avatar">STR</div><div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+function ask(btn) { document.getElementById('userInput').value = btn.textContent; sendMessage(); }
+
+function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+  document.getElementById('suggestions').style.display = 'none';
+  addMessage('user', text);
+  input.value = '';
+
+  // Admin / diagnostic commands (local only):
+  // /unanswered            -> show top unanswered queries
+  // /unanswered clear      -> clear log
+  const lower = text.toLowerCase();
+  if (lower === '/unanswered' || lower === '/unanswered top') {
+    showTyping();
+    setTimeout(() => { removeTyping(); addMessage('bot', renderUnansweredReport(15)); }, 350);
+    return;
+  }
+  if (lower === '/unanswered clear') {
+    clearUnanswered();
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      addMessage('bot', lang === 'sv' ? 'Loggen är rensad.' : 'Log cleared.');
+    }, 250);
+    return;
+  }
+
+  showTyping();
+  setTimeout(() => { removeTyping(); addMessage('bot', findAnswer(text)); }, 500 + Math.random() * 300);
+}
+
+window.onloadwindow.onload = () => {
+  renderTabs('all');
+  renderSuggestions('all');
+  setTimeout(() => addMessage('bot', UI[lang].welcome), 400);
+};
+</script>
+</body>
+</html>
